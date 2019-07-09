@@ -7,8 +7,9 @@
 -module(pqc_cb_accounts).
 
 -export([create_account/2, create_account/3
+        ,update_account/3
         ,delete_account/2
-        ,cleanup_accounts/1, cleanup_accounts/2
+        ,cleanup/0, cleanup_accounts/1, cleanup_accounts/2
 
         ,command/2
         ,symbolic_account_id/2
@@ -17,7 +18,7 @@
         ,postcondition/3
 
          %% kapps_maintenance:check_release callback
-        ,seq/0
+        ,seq/0, seq_44832/0
         ]).
 
 -export([account_url/1]).
@@ -60,11 +61,23 @@ create_account(API, NewAccountName, AccountId) ->
         andalso allow_number_additions(pqc_cb_response:account_id(Resp)),
     Resp.
 
+-spec update_account(pqc_cb_api:state(), kz_term:ne_binary(), kz_json:object()) -> pqc_cb_api:response().
+update_account(API, AccountId, ReqData) ->
+    RequestEnvelope = pqc_cb_api:create_envelope(ReqData),
+
+    pqc_cb_api:make_request([200]
+                           ,fun kz_http:post/3
+                           ,account_url(AccountId)
+                           ,pqc_cb_api:request_headers(API)
+                           ,kz_json:encode(RequestEnvelope)
+                           ).
+
 -spec allow_number_additions(kz_term:ne_binary()) -> {'ok', kzd_accounts:doc()}.
 allow_number_additions(AccountId) ->
     {'ok', _Account} = kzd_accounts:update(AccountId
                                           ,[{kzd_accounts:path_allow_number_additions(), 'true'}]
-                                          ).
+                                          ),
+    lager:info("updated ~s (~s) to allow number additions", [AccountId, kz_doc:revision(_Account)]).
 
 -spec delete_account(pqc_cb_api:state(), kz_term:ne_binary()) -> pqc_cb_api:response().
 delete_account(API, AccountId) ->
@@ -107,7 +120,7 @@ check_accounts_db(Name) ->
         {'ok', []} -> 'ok';
         {'error', _E} -> ?ERROR("failed to list by name: ~p", [_E]);
         {'ok', JObjs} ->
-            ?INFO("deleting from ~s: ~p~n", [?KZ_ACCOUNTS_DB, JObjs]),
+            lager:info("deleting from ~s: ~p~n", [?KZ_ACCOUNTS_DB, JObjs]),
             kz_datamgr:del_docs(?KZ_ACCOUNTS_DB, JObjs)
     end.
 
@@ -134,30 +147,50 @@ postcondition(Model
              ) ->
     case pqc_kazoo_model:account_id_by_name(Model, Name) of
         'undefined' ->
-            ?INFO("no account by the name of ~s, should be an account id in ~s"
-                 ,[Name, APIResult]
-                 ),
+            lager:info("no account by the name of ~s, should be an account id in ~s"
+                      ,[Name, APIResult]
+                      ),
             'undefined' =/= pqc_cb_response:account_id(APIResult);
         _AccountId ->
-            ?INFO("account ~s (~s) found, API should be an error: ~s"
-                 ,[Name, _AccountId, APIResult]
-                 ),
+            lager:info("account ~s (~s) found, API should be an error: ~s"
+                      ,[Name, _AccountId, APIResult]
+                      ),
             500 =:= pqc_cb_response:error_code(APIResult)
     end.
 
 -spec seq() -> 'ok'.
 seq() ->
-    enable_and_delete_topup().
+    enable_and_delete_topup(),
+    seq_44832().
+
+-spec seq_44832() -> 'ok'.
+seq_44832() ->
+    API = pqc_cb_api:init_api(['crossbar'], ['cb_accounts']),
+
+    AccountResp = create_account(API, hd(?ACCOUNT_NAMES)),
+    lager:info("created account ~s", [AccountResp]),
+
+    AccountJObj = kz_json:get_value(<<"data">>, kz_json:decode(AccountResp)),
+    AccountId = kz_json:get_binary_value(<<"id">>, AccountJObj),
+
+    RequestData = kz_json:set_value(<<"enabled">>, 'false', AccountJObj),
+
+    lists:foreach(fun(N) ->
+                          Update = update_account(API, AccountId, RequestData),
+                          lager:info("update ~p: ~s", [N, Update])
+                  end
+                 ,lists:seq(1, 4)
+                 ),
+
+    cleanup(API),
+    lager:info("finished double-POST check").
 
 -spec enable_and_delete_topup() -> 'ok'.
 enable_and_delete_topup() ->
     API = pqc_cb_api:init_api(['crossbar'], ['cb_accounts']),
 
-    %% Make sure everything is clean for the test.
-    cleanup(API),
-
     AccountResp = create_account(API, hd(?ACCOUNT_NAMES)),
-    ?INFO("created account: ~s", [AccountResp]),
+    lager:info("created account: ~s", [AccountResp]),
 
     AccountJObj = kz_json:get_value(<<"data">>, kz_json:decode(AccountResp)),
     AccountId = kz_json:get_binary_value(<<"id">>, AccountJObj),
@@ -166,7 +199,7 @@ enable_and_delete_topup() ->
     RequestEnvelope = pqc_cb_api:create_envelope(RequestData),
 
     Resp = topup_request(API, AccountId, RequestEnvelope),
-    ?INFO("enable topup resp: ~s", [Resp]),
+    lager:info("enable topup resp: ~s", [Resp]),
 
     RespJObj = pqc_cb_response:data(Resp),
     'true' = kz_json:are_equal(TopupConfig, kz_json:get_ne_value(<<"topup">>, RespJObj)),
@@ -174,16 +207,16 @@ enable_and_delete_topup() ->
     RequestEnvelope1 = pqc_cb_api:create_envelope(RequestData1),
 
     Resp1 = topup_request(API, AccountId, RequestEnvelope1),
-    ?INFO("disable topup resp: ~s", [Resp1]),
+    lager:info("disable topup resp: ~s", [Resp1]),
 
     'undefined' = kz_json:get_ne_value(<<"topup">>, kz_json:decode(Resp1)),
 
     cleanup(API),
-    ?INFO("FINISHED ENABLE AND DISABLE TOPUP CHECKS").
+    lager:info("FINISHED ENABLE AND DISABLE TOPUP CHECKS").
 
 -spec cleanup(pqc_cb_api:state()) -> any().
 cleanup(API) ->
-    ?INFO("CLEANUP TIME, EVERYBODY HELPS"),
+    lager:info("CLEANUP TIME, EVERYBODY HELPS"),
     _ = cleanup_accounts(API, ?ACCOUNT_NAMES),
     _ = pqc_cb_api:cleanup(API).
 
@@ -195,3 +228,8 @@ topup_request(API, AccountId, RequestEnvelope) ->
                            ,pqc_cb_api:request_headers(API)
                            ,kz_json:encode(RequestEnvelope)
                            ).
+
+-spec cleanup() -> 'ok'.
+cleanup() ->
+    API = pqc_cb_api:init_api(['crossbar'], ['cb_accounts']),
+    cleanup(API).
