@@ -63,7 +63,9 @@ open_cache_doc(DbName, DocId, Options) ->
         {MitigationKey, _Pid} ->
             fetch_doc(DbName, DocId, Options, CacheStrategy);
         {'ok', {'error', _}=E} -> E;
-        {'ok', _}=Ok -> Ok;
+        {'ok', _Doc}=Ok ->
+            lager:debug("opening ~s / ~s(~s) from cache", [DbName, DocId, kz_doc:revision(_Doc)]),
+            Ok;
         {'error', 'not_found'} when CacheStrategy =:= 'stampede' ->
             mitigate_stampede(DbName, DocId, Options, CacheStrategy);
         {'error', 'not_found'} ->
@@ -113,7 +115,9 @@ open_cache_doc(Server, DbName, DocId, Options) ->
         {MitigationKey, _Pid} ->
             fetch_doc(Server, DbName, DocId, remove_cache_options(Options), CacheStrategy);
         {'ok', {'error', _}=E} -> E;
-        {'ok', _}=Ok -> Ok;
+        {'ok', _Doc}=Ok ->
+            lager:debug("opening ~s / ~s(~s) from cache", [DbName, DocId, kz_doc:revision(_Doc)]),
+            Ok;
         {'error', 'not_found'} ->
             fetch_doc(Server, DbName, DocId, remove_cache_options(Options), CacheStrategy)
     end.
@@ -131,7 +135,7 @@ open_cache_docs(DbName, DocIds, Options) ->
     case MissedDocIds =/= []
         andalso kz_datamgr:open_docs(DbName, MissedDocIds, remove_cache_options(Options))
     of
-        {error, _}=E -> E;
+        {'error', _}=E -> E;
         Other ->
             prepare_jobjs(DbName, DocIds, Options, Cached, Other)
     end.
@@ -139,26 +143,26 @@ open_cache_docs(DbName, DocIds, Options) ->
 -spec prepare_jobjs(kz_term:text(), kz_term:ne_binaries(), kz_term:proplist(), docs_returned(), {ok, kz_json:objects()} | 'false') ->
                            {'ok', kz_json:objects()} |
                            data_error().
-prepare_jobjs(DbName, DocIds, Options, Cached, false) ->
-    prepare_jobjs(DbName, DocIds, Options, Cached, {ok, []});
-prepare_jobjs(DbName, DocIds, Options, Cached, {ok, Opened}) ->
+prepare_jobjs(DbName, DocIds, Options, Cached, 'false') ->
+    prepare_jobjs(DbName, DocIds, Options, Cached, {'ok', []});
+prepare_jobjs(DbName, DocIds, Options, Cached, {'ok', Opened}) ->
     FromBulk = disassemble_jobjs(DbName, Options, Opened),
-    {ok, assemble_jobjs(DocIds, Cached, FromBulk)}.
+    {'ok', assemble_jobjs(DocIds, Cached, FromBulk)}.
 
 fetch_locals(DbName, DocIds) ->
     F = fun (DocId, {Cached, Missed}) ->
                 case kz_cache:fetch_local(?CACHE_NAME, ?CACHE_KEY(DbName, DocId)) of
-                    {error, not_found} -> {Cached, [DocId|Missed]};
-                    {ok, {error, Reason}} ->
-                        {[{DocId, error, Reason}|Cached], Missed};
-                    {ok, Doc} ->
-                        {[{DocId, ok, Doc}|Cached], Missed}
+                    {'error', 'not_found'} -> {Cached, [DocId|Missed]};
+                    {'ok', {'error', Reason}} ->
+                        {[{DocId, 'error', Reason}|Cached], Missed};
+                    {'ok', Doc} ->
+                        {[{DocId, 'ok', Doc}|Cached], Missed}
                 end
         end,
     lists:foldl(F, {[], []}, DocIds).
 
--type doc_returned() :: {kz_term:ne_binary(), ok, kz_json:object()} |
-                        {kz_term:ne_binary(), error, kz_term:ne_binary()}.
+-type doc_returned() :: {kz_term:ne_binary(), 'ok', kz_json:object()} |
+                        {kz_term:ne_binary(), 'error', kz_term:ne_binary()}.
 -type docs_returned() :: [doc_returned()].
 -spec disassemble_jobjs(kz_term:ne_binary(), kz_term:proplist(), kz_json:objects()) -> docs_returned().
 disassemble_jobjs(DbName, Options, JObjs) ->
@@ -183,15 +187,15 @@ assemble_jobjs(DocIds, Cached, DocsReturned) ->
     kz_json:order_by([<<"key">>], DocIds, [JObjs1,JObjs2]).
 
 -spec to_nonbulk_format(doc_returned()) -> kz_json:object().
-to_nonbulk_format({DocId, ok, Doc}) ->
+to_nonbulk_format({DocId, 'ok', Doc}) ->
     kz_json:from_list(
       [{<<"key">>, DocId}
       ,{<<"doc">>, Doc}
       ]);
-to_nonbulk_format({DocId, error, Reason}) ->
+to_nonbulk_format({DocId, 'error', Reason}) ->
     kz_json:from_list(
       [{<<"key">>, DocId}
-      ,{<<"error">>, kz_term:to_atom(Reason, true)}
+      ,{<<"error">>, kz_term:to_atom(Reason, 'true')}
       ]).
 
 -spec remove_cache_options(kz_term:proplist()) -> kz_term:proplist().
@@ -306,6 +310,7 @@ flush_cache_doc(Db, Doc) when is_binary(Db) ->
 flush_cache_doc(#db{name=Name}, Doc, Options) ->
     flush_cache_doc(kz_term:to_binary(Name), Doc, Options);
 flush_cache_doc(DbName, DocId, _Options) when is_binary(DocId) ->
+    lager:debug("flushing ~s / ~s", [DbName, DocId]),
     kz_cache:erase_local(?CACHE_NAME, ?CACHE_KEY(DbName, DocId));
 flush_cache_doc(DbName, Doc, Options) ->
     flush_cache_doc(DbName, kz_doc:id(Doc), Options).
@@ -318,6 +323,7 @@ flush_cache_docs(#db{name=Name}) ->
     flush_cache_docs(kz_term:to_binary(Name));
 flush_cache_docs(DbName) ->
     Filter = fun(?CACHE_KEY(DbName1, _DocId)=Key, _) when DbName1 =:= DbName ->
+                     lager:debug("flushing ~s / ~s", [DbName, _DocId]),
                      kz_cache:erase_local(?CACHE_NAME, Key),
                      'true';
                 (_, _) -> 'false'
