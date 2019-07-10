@@ -817,7 +817,7 @@ get_token_restrictions(AuthModule, AccountId, OwnerId) ->
             get_priv_level_restrictions(Restrictions, PrivLevel)
     end.
 
--spec get_priv_level(kz_term:ne_binary(), kz_term:ne_binary()) -> kz_term:api_binary().
+-spec get_priv_level(kz_term:ne_binary(), kz_term:api_ne_binary()) -> kz_term:api_binary().
 %% for api_auth tokens we force "admin" priv_level
 get_priv_level(_AccountId, 'undefined') ->
     cb_token_restrictions:default_priv_level();
