@@ -229,10 +229,7 @@ handle_send(To, From, {'ok', _Pid}) ->
     wait_for_response(To, From);
 handle_send(_To, _From, {'error', _R}=Error) ->
     lager:info("error trying to send email: ~p", [_R]),
-    Error;
-handle_send(To, From, _Pid) ->
-    lager:debug("smtp client is processing with pid ~p", [_Pid]),
-    wait_for_response(To, From).
+    Error.
 
 -spec wait_for_response(kz_term:binaries(), kz_term:ne_binary()) -> {'ok', kz_term:ne_binary()} | {'error', any()}.
 wait_for_response(To, From) ->
