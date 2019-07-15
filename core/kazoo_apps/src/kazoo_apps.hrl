@@ -30,6 +30,7 @@
                        ,'tasks'
                        ,'teletype'
                        ,'trunkstore'
+                       ,'functions'
                        ,'webhooks'
                        ]).
 

@@ -1,0 +1,26 @@
+{
+    "_id": "_design/functions",
+    "kazoo": {
+        "view_map": [
+            {
+                "database": "functions"
+            }
+        ]
+    },
+    "language": "javascript",
+    "views": {
+        "accounts_listing": {
+            "map": "function(doc) { if (doc.pvt_type !== 'function' || doc.pvt_deleted) return; emit(doc.pvt_account_id, null); }",
+            "reduce": "_count"
+        },
+        "crossbar_listing": {
+            "map": "function(doc) { if (doc.pvt_type !== 'function' || doc.pvt_deleted) return; var enabled = (typeof doc.enabled === 'undefined') ? true : doc.enabled; emit([doc.pvt_account_id, doc._id], {'id': doc._id, 'trigger': doc.trigger, 'name':doc.name, 'function_js': doc.function_js, 'enabled':enabled, 'disable_reason':doc.pvt_disabled_message}); }"
+        },
+        "functions_listing": {
+            "map": "function(doc) { if (doc.pvt_type !== 'function' || doc.pvt_deleted || doc.enabled === false) return; emit([doc.pvt_account_id, doc._id], {'id': doc._id, 'trigger': doc.trigger, 'name':doc.name, 'function_js': doc.function_js}); }"
+        },
+        "trigger_listing": {
+            "map": "function(doc) { if (doc.pvt_type !== 'function' || doc.pvt_deleted) return; emit(doc.trigger, doc.pvt_account_id); }"
+        }
+    }
+}

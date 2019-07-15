@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "_id": "functions",
+    "description": "Functions are subscriptions to allowed events that, when the event occurs, the event data is sent to the function set in the function document.",
+    "properties": {
+        "enabled": {
+            "default": true,
+            "description": "Is the function enabled and running",
+            "type": "boolean"
+        },
+        "function_js": {
+            "description": "Serverless function in Javascript",
+            "type": "string"
+        },
+        "http_verb": {
+            "default": "post",
+            "description": "What HTTP method to use when contacting the server",
+            "enum": [
+                "get",
+                "post",
+                "put"
+            ],
+            "support_level": "supported",
+            "type": "string"
+        },
+        "name": {
+            "description": "A descriptive name for the function.",
+            "support_level": "supported",
+            "type": "string"
+        },
+        "retries": {
+            "default": 2,
+            "description": "Retry the request this many times (if it fails)",
+            "maximum": 4,
+            "minimum": 0,
+            "support_level": "supported",
+            "type": "integer"
+        },
+        "trigger": {
+            "description": "The trigger event for a request being made to 'callback_uri'.",
+            "support_level": "supported",
+            "type": "string"
+        }
+    },
+    "required": [
+        "trigger",
+        "name",
+        "function_js"
+    ],
+    "type": "object"
+}

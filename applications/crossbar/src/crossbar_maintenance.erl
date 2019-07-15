@@ -1356,4 +1356,5 @@ db_init() ->
 
 -spec register_views() -> 'ok'.
 register_views() ->
+    lager:warning("crossbar register_views()"),
     kz_datamgr:register_views_from_folder('crossbar').

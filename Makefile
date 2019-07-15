@@ -57,6 +57,7 @@ sparkly-clean: clean-apps clean-kazoo clean-release clean-deps
 clean: clean-kazoo
 	$(if $(wildcard *crash.dump), rm *crash.dump)
 	$(if $(wildcard scripts/log/*), rm -rf scripts/log/*)
+	$(if $(wildcard make/.deps.mk.*), rm make/.deps.mk.*)
 	$(if $(wildcard rel/dev-vm.args), rm rel/dev-vm.args)
 
 clean-kazoo: clean-core clean-apps

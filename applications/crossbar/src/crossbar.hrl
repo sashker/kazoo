@@ -124,6 +124,7 @@
                          ,'cb_user_auth'
                          ,'cb_users'
                          ,'cb_vmboxes'
+                         ,'cb_functions'
                          ,'cb_webhooks'
                          ,'cb_websockets'
                          ,'cb_whitelabel'
