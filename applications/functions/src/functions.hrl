@@ -1,4 +1,4 @@
--ifndef(WEBHOOKS_HRL).
+-ifndef(FUNCTIONS_HRL).
 -include_lib("kazoo_stdlib/include/kz_types.hrl").
 -include_lib("kazoo_stdlib/include/kz_log.hrl").
 -include_lib("kazoo_stdlib/include/kz_databases.hrl").
@@ -13,7 +13,7 @@
 -type http_verb() :: 'get' | 'post'.
 -type trigger_retries() :: 1..5.
 
-% 
+%
 % use function_record since function is a reserved term.
 -record(function_record, {id :: kz_term:api_ne_binary() | '_'
                  ,uri :: kz_term:api_ne_binary() | '_'

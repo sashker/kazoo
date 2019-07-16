@@ -34,8 +34,8 @@ do_init(MasterAccountDb) ->
 init_dbs() ->
     lager:warning("functions init_db()"),
     _ = init_master_account_db(),
-    _ = kz_datamgr:db_create(?KZ_WEBHOOKS_DB),
-    _ = kz_datamgr:revise_doc_from_file(?KZ_SCHEMA_DB, 'crossbar', <<"schemas/webhooks.json">>),
+    _ = kz_datamgr:db_create(?KZ_FUNCTIONS_DB),
+    _ = kz_datamgr:revise_doc_from_file(?KZ_SCHEMA_DB, 'crossbar', <<"schemas/functions.json">>),
     'ok'.
 
 -spec maybe_init_account(kz_json:object(), kz_term:proplist()) -> 'ok' | 'false'.
@@ -50,8 +50,7 @@ init_master_account_db() ->
         {'ok', MasterAccountDb} ->
             init_master_account_db(MasterAccountDb);
         {'error', _} ->
-            lager:debug("master account hasn't been created yet"),
-            functions_shared_listener:add_account_bindings()
+            lager:warning("master account hasn't been created yet")
     end.
 
 -spec init_master_account_db(kz_term:ne_binary()) -> 'ok'.

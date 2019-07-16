@@ -1,7 +1,7 @@
 %%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2013-2019, 2600Hz
 %%% @doc
-%%% @author 
+%%% @author ming luo
 %%% @end
 %%%-----------------------------------------------------------------------------
 -module(functions_listener).
@@ -70,13 +70,13 @@ handle_config(JObj, Props) ->
 
 -spec handle_config(kz_json:object(), pid(), kz_term:ne_binary()) -> 'ok'.
 handle_config(_JObj, _Srv, ?DOC_CREATED) ->
-    lager:debug("Doc_created"),
+    lager:debug("doc_created"),
     ok;
 handle_config(_JObj, _Srv, ?DOC_EDITED) ->
-    lager:debug("Doc_edited"),
+    lager:debug("doc_edited"),
     ok;
 handle_config(_JObj, _Srv, ?DOC_DELETED) ->
-    lager:debug("Doc_deleted"),
+    lager:debug("doc_deleted"),
     ok.
 
 %%%=============================================================================
@@ -104,26 +104,8 @@ handle_call(_Request, _From, State) ->
 %% @doc Handling cast messages.
 %% @end
 %%------------------------------------------------------------------------------
+%% TODO: add impl for amqp listener handler
 -spec handle_cast(any(), state()) -> kz_types:handle_cast_ret_state(state()).
-handle_cast({'add_trigger', #function_record{id=_Id}=Trigger}, State) ->
-    lager:debug("adding trigger ~s", [_Id]),
-    ets:insert_new(functions_util:table_id(), Trigger),
-    {'noreply', State};
-handle_cast({'update_trigger', #function_record{id=_Id}=Trigger}, State) ->
-    lager:debug("updating trigger ~s", [_Id]),
-    _ = ets:insert(functions_util:table_id(), Trigger),
-    {'noreply', State};
-handle_cast({'remove_trigger', #function_record{id=Id}}, State) ->
-    handle_cast({'remove_trigger', Id}, State);
-handle_cast({'remove_trigger', <<_/binary>> = Id}, State) ->
-    lager:debug("removing trigger ~s", [Id]),
-    ets:delete(functions_util:table_id(), Id),
-    {'noreply', State};
-handle_cast({'gen_listener', {'created_queue', _Q}}, State) ->
-    {'noreply', State};
-handle_cast({'gen_listener', {'is_consuming', _IsConsuming}}, State) ->
-    lager:debug("starting to consume: ~s", [_IsConsuming]),
-    {'noreply', State};
 handle_cast(_Msg, State) ->
     lager:debug("unhandled cast: ~p", [_Msg]),
     {'noreply', State}.
@@ -177,6 +159,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%%=============================================================================
 %%% Internal functions
 %%%=============================================================================
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @end
+%%------------------------------------------------------------------------------
 -spec load_funcs(pid()) -> 'ok'.
 load_funcs(_Srv) ->
     lager:debug("loading functions into memory"),

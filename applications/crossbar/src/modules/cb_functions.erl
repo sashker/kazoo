@@ -1,3 +1,4 @@
+%%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2011-2019, 2600Hz
 %%% @doc Handle CRUD operations for functions
 %%% @author
@@ -63,7 +64,7 @@ init() ->
     ok.
 
 %%------------------------------------------------------------------------------
-%% @doc Authenticates the incoming request, returning true and context 
+%% @doc Authenticates the incoming request, returning true and context
 %% if the requestor is known, or false if not.
 %% @end
 %%------------------------------------------------------------------------------
@@ -182,8 +183,7 @@ content_types_accepted(Context) ->
 
 -spec validate(cb_context:context()) -> cb_context:context().
 validate(Context) ->
-    validate_functions(cb_context:set_account_db(Context, ?KZ_FUNCTIONS_DB), 
-                       cb_context:req_verb(Context)).
+    validate_functions(cb_context:set_account_db(Context, ?KZ_FUNCTIONS_DB), cb_context:req_verb(Context)).
 
 -spec validate_functions(cb_context:context(), http_method()) -> cb_context:context().
 validate_functions(Context, ?HTTP_GET) ->
@@ -358,10 +358,7 @@ normalize_available(Context, JObj, Acc) ->
     maybe_filter_non_admin_hooks(Context, kz_doc:id(JObj), kz_json:get_value(<<"doc">>, JObj), Acc).
 
 -spec maybe_filter_non_admin_hooks(cb_context:context(), kz_term:ne_binary(), kz_json:object(), kz_json:objects()) -> kz_json:objects().
-maybe_filter_non_admin_hooks(_, <<"webhooks_skel">>, _, Acc) -> Acc;
-% maybe_filter_non_admin_hooks(Context, <<"webhooks_notifications">>, JObj, Acc) ->
-%     [kz_doc:set_id(maybe_filter_non_admin_notifications(Context, JObj), <<"notifications">>) | Acc];
-maybe_filter_non_admin_hooks(_, <<"webhooks_", Id/binary>>, JObj, Acc) ->
+maybe_filter_non_admin_hooks(_, <<"functions_", Id/binary>>, JObj, Acc) ->
     [kz_doc:set_id(JObj, Id) | Acc];
 maybe_filter_non_admin_hooks(_, Id, JObj, Acc) ->
     [kz_doc:set_id(JObj, Id) | Acc].

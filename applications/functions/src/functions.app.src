@@ -3,9 +3,9 @@
                              kazoo_data,kazoo_documents,kazoo_events,
                              kazoo_modb,kazoo_stdlib,kazoo_web,kernel,lager,
                              stdlib]},
-              {description,"Functions - serverless"},
+              {description,"Functions"},
               {env,[{is_kazoo_app,true}]},
               {mod,{functions_app,[]}},
               {modules,[]},
-              {registered,[functions_cache,functions_sup]},
+              {registered,[functions_sup]},
               {vsn,"4.0.0"}]}.
