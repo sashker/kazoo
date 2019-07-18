@@ -147,6 +147,9 @@ pages:
     - 'Troubleshooting': 'applications/blackhole/doc/troubleshooting.md'
     - 'Presentations':
       - 'doc/kazoocon/realtime_events2016.md'
+  - 'Functions':
+    - 'applications/functions/doc/README.md'
+    - 'API': 'applications/crossbar/doc/functions.md'
   - 'Webhooks':
     - 'applications/webhooks/doc/README.md'
     - 'Administration': 'applications/webhooks/doc/maintenance.md'

@@ -30,7 +30,7 @@
                  }).
 
 -type function_record() :: #function_record{}.
--type functions() :: [function_record()].
+-type function_records() :: [function_record()].
 
 -define(CACHE_NAME, 'functions_cache').
 
