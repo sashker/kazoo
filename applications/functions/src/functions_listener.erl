@@ -1,7 +1,7 @@
 %%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2013-2019, 2600Hz
 %%% @doc
-%%% @author ming luo
+%%% @author Ming Luo
 %%% @end
 %%%-----------------------------------------------------------------------------
 -module(functions_listener).
@@ -121,7 +121,7 @@ handle_info({'ETS-TRANSFER', _TblId, _From, _Data}, State) ->
     _ = kz_util:spawn(
           fun() ->
                   kz_util:put_callid(?MODULE)
-                  , load_funcs(Self)
+                      , load_funcs(Self)
           end),
     {'noreply', State};
 handle_info(_Info, State) ->

@@ -1,7 +1,7 @@
 %%%-----------------------------------------------------------------------------
 %%% @copyright (C) 2011-2019, 2600Hz
 %%% @doc Handle CRUD operations for functions
-%%% @author
+%%% @author Ming Luo
 %%% @end
 %%%-----------------------------------------------------------------------------
 -module(cb_functions).
@@ -45,8 +45,7 @@
 init() ->
     _ = kz_datamgr:db_create(?KZ_FUNCTIONS_DB),
     _ = kz_datamgr:revise_doc_from_file(?KZ_SCHEMA_DB, ?APP, <<"schemas/functions.json">>),
-    % TODO: check if DB set up is required, webhooks has it
-    %init_master_account_db(),
+    %% TODO: check if DB set up is required at bootstrap, I could have set up manually.
     _ = crossbar_bindings:bind(<<"*.authenticate">>, ?MODULE, 'authenticate'),
     _ = crossbar_bindings:bind(<<"*.authorize">>, ?MODULE, 'authorize'),
     _ = crossbar_bindings:bind(<<"*.allowed_methods.functions">>, ?MODULE, 'allowed_methods'),
@@ -104,7 +103,7 @@ authorize(Context) ->
 -spec authorize(cb_context:context(), req_nouns(), http_method()) -> boolean().
 authorize(Context, [{<<"functions">>, _}], ?HTTP_POST) ->
     cb_context:is_superduper_admin(Context)
-    orelse cb_context:is_account_admin(Context);
+        orelse cb_context:is_account_admin(Context);
 authorize(_Context, [{<<"functions">>, [?PATH_TOKEN_SAMPLES | _]}], ?HTTP_GET) ->
     'true';
 authorize(_Context, [{<<"functions">>, []}], ?HTTP_GET) ->
@@ -307,7 +306,7 @@ read(Id, Context) ->
         _Status -> ReplyContext
     end.
 
-% TODO: this is duplicated code of cb_webhooks.erl. Make it a public function.
+%% TODO: this is duplicated code of cb_webhooks.erl. Make it a public function.
 -spec maybe_leak_pvt_fields(cb_context:context()) -> cb_context:context().
 maybe_leak_pvt_fields(Context) ->
     Doc = cb_context:doc(Context),

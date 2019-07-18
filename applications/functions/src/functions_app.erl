@@ -17,7 +17,6 @@
 %%------------------------------------------------------------------------------
 -spec start(application:start_type(), any()) -> kz_types:startapp_ret().
 start(_Type, _Args) ->
-    lager:warning("functions app start()"),
     'ok' = kz_datamgr:register_views_from_folder(?APP, "views"),
     _ = declare_exchanges(),
     functions_sup:start_link().
@@ -28,7 +27,6 @@ start(_Type, _Args) ->
 %%------------------------------------------------------------------------------
 -spec stop(any()) -> any().
 stop(_State) ->
-    % _ = kapps_maintenance:unbind(), TODO Is unbind required?
     'ok'.
 
 -spec declare_exchanges() -> 'ok'.
