@@ -1,6 +1,6 @@
 {application,functions,
-             [{applications,[kazoo,kazoo_amqp,kazoo_apps,kazoo_data,
-                             kazoo_stdlib,kernel,lager,stdlib]},
+             [{applications,[kazoo,kazoo_amqp,kazoo_data,kazoo_stdlib,kernel,
+                             lager,stdlib]},
               {description,"Functions"},
               {env,[{is_kazoo_app,true}]},
               {mod,{functions_app,[]}},
