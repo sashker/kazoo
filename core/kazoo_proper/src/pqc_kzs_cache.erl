@@ -140,7 +140,7 @@ doc(Rev) ->
     ,{<<"_rev">>, Rev}
     ,{<<"foo">>, <<"bar">>}
     ,{<<"pvt_account_db">>, ?DB}
-     | [{kz_term:to_binary(Key), kz_binary:rand_hex(10)} || Key <- lists:seq(1,50)]
+     | [{kz_term:to_binary(Key), kz_binary:rand_hex(16)} || Key <- lists:seq(1,50)]
     ].
 
 -spec initial_state() -> 'undefined'.
@@ -155,7 +155,7 @@ command('undefined') ->
 command(Rev) ->
     oneof([{'call', ?MODULE, 'update', [Rev]}
           ,{'call', ?MODULE, 'get', [Rev]}
-          ,{'call', 'timer', 'sleep', [range(0,50)]}
+           %% ,{'call', 'timer', 'sleep', [range(0,50)]}
           ]).
 
 -spec next_state(kz_term:api_ne_binary(), any(), tuple()) -> kz_term:api_ne_binary().
