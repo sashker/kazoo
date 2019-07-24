@@ -25,12 +25,12 @@ correct() ->
            ,commands(?MODULE)
            ,?TRAPEXIT(
                begin
-                   kz_datamgr:db_delete(?DB),
                    kz_datamgr:flush_cache_docs(?DB),
                    kz_datamgr:db_create(?DB),
+                   kz_datamgr:del_doc(?DB, ?ID),
                    {History, State, Result} = run_commands(?MODULE, Cmds),
-                   kz_datamgr:db_delete(?DB),
                    kz_datamgr:flush_cache_docs(?DB),
+                   kz_datamgr:del_doc(?DB, ?ID),
                    ?WHENFAIL(io:format("Final State: ~p\nFailing Cmds: ~p\n"
                                       ,[State, zip(Cmds, History)]
                                       )
@@ -46,12 +46,12 @@ correct_parallel() ->
            ,parallel_commands(?MODULE)
            ,?TRAPEXIT(
                begin
-                   kz_datamgr:db_delete(?DB),
                    kz_datamgr:flush_cache_docs(?DB),
                    kz_datamgr:db_create(?DB),
+                   _ = kz_datamgr:del_doc(?DB, ?ID),
                    {History, State, Result} = run_parallel_commands(?MODULE, Cmds),
-                   kz_datamgr:db_delete(?DB),
                    kz_datamgr:flush_cache_docs(?DB),
+                   _ = kz_datamgr:del_doc(?DB, ?ID),
                    ?WHENFAIL(io:format("=======~n"
                                        "Failing command sequence:~n~p~n"
                                        "At state: ~p~n"
@@ -77,10 +77,9 @@ run_counterexample([SeqSteps]) ->
 run_counterexample(SeqSteps, State) ->
     process_flag('trap_exit', 'true'),
 
-    kz_datamgr:db_delete(?DB),
-    kz_datamgr:flush_cache_docs(?DB),
-    'false' = kz_datamgr:db_exists(?DB),
-    'true' = kz_datamgr:db_create(?DB),
+    _ = kz_datamgr:db_create(?DB),
+    _ = kz_datamgr:del_doc(?DB, ?ID),
+    _ = kz_datamgr:flush_cache_docs(?DB),
 
     try lists:foldl(fun transition_if/2
                    ,{1, State, #{}}
@@ -89,7 +88,7 @@ run_counterexample(SeqSteps, State) ->
     catch
         'throw':T -> {'throw', T}
     after
-        kz_datamgr:db_delete(?DB),
+        kz_datamgr:del_doc(?DB, ?ID),
         kz_datamgr:flush_cache_docs(?DB)
     end.
 
@@ -141,7 +140,7 @@ doc(Rev) ->
     ,{<<"_rev">>, Rev}
     ,{<<"foo">>, <<"bar">>}
     ,{<<"pvt_account_db">>, ?DB}
-    ,{<<"rand">>, kz_binary:rand_hex(2)}
+     | [{kz_term:to_binary(Key), kz_binary:rand_hex(10)} || Key <- lists:seq(1,50)]
     ].
 
 -spec initial_state() -> 'undefined'.
@@ -156,6 +155,7 @@ command('undefined') ->
 command(Rev) ->
     oneof([{'call', ?MODULE, 'update', [Rev]}
           ,{'call', ?MODULE, 'get', [Rev]}
+          ,{'call', 'timer', 'sleep', [range(0,50)]}
           ]).
 
 -spec next_state(kz_term:api_ne_binary(), any(), tuple()) -> kz_term:api_ne_binary().
@@ -170,6 +170,8 @@ next_state(_OldRev
           ) ->
     NewRev;
 next_state(Rev, _V, {'call', ?MODULE, 'get', [_]}) ->
+    Rev;
+next_state(Rev, _V, {'call', 'timer', 'sleep', [_]}) ->
     Rev.
 
 -spec precondition(any(), any()) -> 'true'.
@@ -194,4 +196,5 @@ postcondition(OldRev
              ,{'call', ?MODULE, 'get', [_OldRev]}
              ,GetRev
              ) ->
-    OldRev =:= GetRev.
+    OldRev =:= GetRev;
+postcondition(_Rev, {'call', 'timer', 'sleep', [_]}, _Res) -> 'true'.
