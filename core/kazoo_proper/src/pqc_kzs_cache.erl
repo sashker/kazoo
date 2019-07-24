@@ -118,12 +118,12 @@ fix_arg(Arg, Acc, Env) ->
 
 -spec create() -> kz_term:ne_binary().
 create() ->
-    {'ok', D} = kz_datamgr:save_doc(?DB, doc()),
+    {'ok', D} = kz_datamgr:save_doc(?DB, kz_json:from_list(doc())),
     kz_doc:revision(D).
 
 -spec update(kz_term:ne_binary()) -> kz_term:ne_binary().
 update(Rev) ->
-    {'ok', D} = kz_datamgr:save_doc(?DB, doc(Rev)),
+    {'ok', D} = kz_datamgr:update_doc(?DB, ?ID, [{'update', doc(Rev)}, {'ensure_saved', 'true'}]),
     kz_doc:revision(D).
 
 -spec get(kz_term:api_ne_binary()) -> kz_term:api_ne_binary().
@@ -137,11 +137,12 @@ doc() ->
     doc('undefined').
 
 doc(Rev) ->
-    kz_json:from_list([{<<"_id">>, ?ID}
-                      ,{<<"_rev">>, Rev}
-                      ,{<<"foo">>, <<"bar">>}
-                      ,{<<"pvt_account_db">>, ?DB}
-                      ]).
+    [{<<"_id">>, ?ID}
+    ,{<<"_rev">>, Rev}
+    ,{<<"foo">>, <<"bar">>}
+    ,{<<"pvt_account_db">>, ?DB}
+    ,{<<"rand">>, kz_binary:rand_hex(2)}
+    ].
 
 -spec initial_state() -> 'undefined'.
 initial_state() ->

@@ -24,6 +24,7 @@
 -spec db_classification(kz_term:text()) -> db_classification().
 db_classification(Db) when not is_binary(Db) ->
     db_classification(kz_term:to_binary(Db));
+db_classification(<<"pqc_kzs_cache">>) -> 'external';
 db_classification(<<"_users">>) -> 'external';
 db_classification(<<"_dbs">>) -> 'external';
 db_classification(<<"users">>) -> 'external';
