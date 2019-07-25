@@ -1542,7 +1542,7 @@
                                 }
                             },
                             {
-                                "$ref": "callflows.audio_macro.tone",
+                                "$ref": "#/callflows/callflows.audio_macro.tone",
                                 "description": "tone to play",
                                 "properties": {
                                     "macro": {
