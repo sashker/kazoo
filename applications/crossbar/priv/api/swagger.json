@@ -1530,7 +1530,7 @@
                         "description": "The individual media to play",
                         "oneOf": [
                             {
-                                "$ref": "callflows.play",
+                                "$ref": "#/callflows/callflows.play",
                                 "description": "media file to play",
                                 "properties": {
                                     "macro": {
